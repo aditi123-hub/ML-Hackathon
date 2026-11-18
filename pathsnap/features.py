@@ -4,100 +4,64 @@ from dataclasses import dataclass
 
 import numpy as np
 import shapely
-from pyproj import Proj
 from shapely import STRtree
 
-from .dataset import Trip
+from .geometry import RoadGeometry
+from .trajectory import CONTEXT_WINDOWS_S, TrajectoryContext
 
 
-FEATURE_NAMES = (
+# This order is part of the model artifact contract. The first checkpoint
+# used these 12 features. Context appends columns and preserves their indices.
+LEGACY_FEATURE_NAMES = (
     "distance_m", "distance_above_nearest_m", "arc_length_m",
     "heading_cosine", "heading_available", "arc_fraction",
     "previous_distance_m", "previous_available", "next_distance_m", "next_available",
     "previous_gap_s", "next_gap_s",
 )
+FEATURE_NAMES = LEGACY_FEATURE_NAMES + (
+    "smoothed_distance_m", "smoothed_distance_above_nearest_m",
+    "incoming_5s_distance_m", "outgoing_5s_distance_m",
+) + tuple(
+    f"{side}_{seconds}s_{measure}"
+    for side in ("incoming", "outgoing")
+    for seconds in CONTEXT_WINDOWS_S
+    for measure in ("heading_cosine", "speed_mps")
+)
 
 
 @dataclass(frozen=True)
 class CandidateConfig:
-    radius_m: float = 100.0
-    limit: int = 16
+    """Shared training/inference settings, saved alongside the fitted model."""
+
+    radius_m: float = 150.0
+    limit: int = 20
     heading_gap_s: float = 20.0
     heading_displacement_m: float = 2.0
+    trajectory_context: bool = True
 
     def __post_init__(self):
-        if not self.radius_m > 0 or self.limit < 1:
-            raise ValueError("Candidate radius and limit must be positive")
+        if not all(np.isfinite(x) and x > 0 for x in (
+            self.radius_m, self.limit, self.heading_gap_s, self.heading_displacement_m,
+        )):
+            raise ValueError("Candidate parameters must be finite and positive")
 
-
-@dataclass
-class RoadGeometry:
-    nodes: np.ndarray
-    arcs: np.ndarray
-    starts: np.ndarray
-    vectors: np.ndarray
-    lengths: np.ndarray
-    points: np.ndarray
-    timestamps: np.ndarray
-    headings: np.ndarray
-    has_heading: np.ndarray
-    prior_gap: np.ndarray
-    next_gap: np.ndarray
+    @property
+    def feature_names(self):
+        return FEATURE_NAMES if self.trajectory_context else LEGACY_FEATURE_NAMES
 
     @classmethod
-    def from_trip(cls, trip: Trip, config: CandidateConfig):
-        track = np.asarray(trip.observations, dtype=np.float64)
-        # A trip-local azimuthal equidistant projection provides coordinates in
-        # metres and avoids longitude wrap at the antimeridian.
-        lon, lat = track[0, :2]
-        projection = Proj(proj="aeqd", lon_0=lon, lat_0=lat, ellps="WGS84")
-
-        def project(coordinates):
-            x, y = projection(coordinates[:, 0], coordinates[:, 1], errcheck=True)
-            return np.column_stack((x, y))
-
-        nodes = project(np.asarray(trip.nodes))
-        points = project(track[:, :2])
-        arcs = np.asarray(trip.arcs, dtype=np.int32)
-        starts = nodes[arcs[:, 0]]
-        vectors = nodes[arcs[:, 1]] - starts
-        lengths = np.linalg.norm(vectors, axis=1)
-        times = track[:, 2]
-
-        delta_t = np.diff(times)
-        steps = np.diff(points, axis=0)
-        step_lengths = np.linalg.norm(steps, axis=1)
-        usable = ((delta_t > 0) & (delta_t <= config.heading_gap_s)
-                  & (step_lengths >= config.heading_displacement_m))
-        directions = np.zeros_like(steps)
-        directions[usable] = steps[usable] / step_lengths[usable, None]
-        # Average the reliable incoming and outgoing unit vectors. Keep a mask
-        # so a stop, dropout, or cancellation does not look like a heading.
-        headings = np.zeros_like(points)
-        headings[:-1] += directions
-        headings[1:] += directions
-        magnitude = np.linalg.norm(headings, axis=1)
-        has_heading = magnitude > 0.1
-        headings[has_heading] /= magnitude[has_heading, None]
-        return cls(
-            nodes, arcs, starts, vectors, lengths, points, times, headings,
-            has_heading, np.r_[0, delta_t], np.r_[delta_t, 0],
-        )
-
-    def distance_and_fraction(self, points, arc_ids):
-        """Distance to the finite segment and position along its source-to-target axis."""
-        vectors = self.vectors[arc_ids]
-        delta = points - self.starts[arc_ids]
-        length_squared = self.lengths[arc_ids] ** 2
-        dot = np.sum(delta * vectors, axis=-1)
-        fraction = np.divide(dot, length_squared, out=np.zeros_like(dot), where=length_squared > 0)
-        np.clip(fraction, 0, 1, out=fraction)
-        return np.linalg.norm(delta - fraction[..., None] * vectors, axis=-1), fraction
+    def from_schema(cls, settings, feature_names):
+        # Original artifacts and caches omit a feature-version switch.
+        config = cls(**({"trajectory_context": False} | settings))
+        if config.feature_names != tuple(feature_names):
+            raise ValueError("Feature schema does not match the candidate configuration")
+        return config
 
 
 @dataclass
 class Candidates:
-    # Padding has arc_id = -1. Road IDs stay local to each trip.
+    """Fixed-width candidate slots per fix. An arc ID of -1 denotes padding."""
+
     arc_ids: np.ndarray
     features: np.ndarray
 
@@ -112,32 +76,29 @@ class Candidates:
 
 def generate_candidates(road: RoadGeometry, config: CandidateConfig) -> Candidates:
     """Find nearby finite segments with an R-tree, then rank by exact distance."""
-    lines = shapely.linestrings(road.nodes[road.arcs])
-    tree = STRtree(lines)
-    points = shapely.points(road.points)
-    rows, arcs = tree.query(points, predicate="dwithin", distance=config.radius_m)
-    empty = np.flatnonzero(np.bincount(rows, minlength=len(points)) == 0)
-    if empty.size:
-        # A nearest segment keeps inference defined for an outlier outside the
-        # search radius. Keep ties so the final ID-based ordering is deterministic.
-        nearest_rows, nearest_arcs = tree.query_nearest(points[empty], all_matches=True)
-        rows = np.r_[rows, empty[nearest_rows]]
-        arcs = np.r_[arcs, nearest_arcs]
-
+    rows, arcs = query_candidate_pairs(road, config.radius_m)
+    observation_count = len(road.points)
     distances, fractions = road.distance_and_fraction(road.points[rows], arcs)
+    # Group the flat pairs by observation, then sort by distance and arc ID.
+    # The arc ID tie-breaker matters on two-way roads with identical geometry.
     order = np.lexsort((arcs, distances, rows))
     rows, arcs = rows[order], arcs[order]
     distances, fractions = distances[order], fractions[order]
-    counts = np.bincount(rows, minlength=len(points))
+    # The first offset indexes the closest arc. Subtract each observation's
+    # offset from absolute row positions to get zero-based candidate ranks.
+    counts = np.bincount(rows, minlength=observation_count)
     offsets = np.r_[0, np.cumsum(counts)[:-1]]
     ranks = np.arange(len(rows)) - offsets[rows]
     keep = ranks < config.limit
     rows, arcs, ranks = rows[keep], arcs[keep], ranks[keep]
     nearest_distances = distances[offsets]
     distances, fractions = distances[keep], fractions[keep]
-    ids = np.full((len(points), config.limit), -1, dtype=np.int32)
+    # Keep fixed-width slots for model batches and Viterbi. Only actual
+    # candidates are populated or scored, so padding is never a road arc.
+    ids = np.full((observation_count, config.limit), -1, dtype=np.int32)
     ids[rows, ranks] = arcs
 
+    # A dot product between unit directions is +1 along travel and -1 against it.
     heading_ok = road.has_heading[rows] & (road.lengths[arcs] > 0)
     heading = np.zeros(len(rows))
     heading[heading_ok] = (
@@ -145,19 +106,73 @@ def generate_candidates(road: RoadGeometry, config: CandidateConfig) -> Candidat
         / road.lengths[arcs[heading_ok]]
     )
 
-    def neighbor_features(neighbor, gap):
-        known = (gap[rows] > 0) & (gap[rows] <= config.heading_gap_s)
-        values = np.zeros(len(rows))
-        values[known], _ = road.distance_and_fraction(road.points[neighbor[known]], arcs[known])
-        return values, known
-
-    previous, previous_known = neighbor_features(rows - 1, road.prior_gap)
-    following, following_known = neighbor_features(rows + 1, road.next_gap)
-    features = np.zeros((*ids.shape, len(FEATURE_NAMES)), dtype=np.float32)
-    features[rows, ranks] = np.column_stack((
+    previous, previous_known = neighbor_distances(road, rows, arcs, -1, config.heading_gap_s)
+    following, following_known = neighbor_distances(road, rows, arcs, 1, config.heading_gap_s)
+    features = np.zeros((*ids.shape, len(config.feature_names)), dtype=np.float32)
+    # Keep the exact feature schema order above when assembling model inputs.
+    local_features = (
         distances, distances - nearest_distances[rows], road.lengths[arcs],
         heading, heading_ok, fractions, previous, previous_known, following,
         following_known, np.clip(road.prior_gap[rows], 0, config.heading_gap_s),
         np.clip(road.next_gap[rows], 0, config.heading_gap_s),
-    ))
+    )
+    if config.trajectory_context:
+        context = TrajectoryContext.build(road.points, road.timestamps, config.heading_gap_s)
+        local_features += trajectory_features(road, context, rows, arcs)
+    features[rows, ranks] = np.column_stack(local_features)
     return Candidates(ids, features)
+
+
+def query_candidate_pairs(road: RoadGeometry, radius_m: float):
+    """Return observation and arc row indices for the radius hits and fallbacks."""
+    # The index sees the same metre coordinate plane as the numeric distance code.
+    lines = shapely.linestrings(road.nodes[road.arcs])
+    tree = STRtree(lines)
+    points = shapely.points(road.points)
+    rows, arcs = tree.query(points, predicate="dwithin", distance=radius_m)
+    empty = np.flatnonzero(np.bincount(rows, minlength=len(points)) == 0)
+    if empty.size:
+        # Find the nearest arc only for fixes with no radius hit. Keep distance
+        # ties so the shared sorting step gives the same result across runs.
+        nearest_rows, nearest_arcs = tree.query_nearest(points[empty], all_matches=True)
+        rows = np.r_[rows, empty[nearest_rows]]
+        arcs = np.r_[arcs, nearest_arcs]
+    return rows, arcs
+
+
+def neighbor_distances(road, rows, arcs, step, max_gap_s):
+    """Measure an adjacent fix against the same arc when the gap is valid."""
+    gaps = road.prior_gap if step == -1 else road.next_gap
+    known = (gaps[rows] > 0) & (gaps[rows] <= max_gap_s)
+    # Unknown entries stay zero with a false mask. This distinguishes a missing
+    # neighbor from a measured distance of zero for a point on the road.
+    values = np.zeros(len(rows))
+    values[known], _ = road.distance_and_fraction(road.points[rows[known] + step], arcs[known])
+    return values, known
+
+
+def trajectory_features(road, context, rows, arcs):
+    """Measure spatial fit and travel direction over several time scales."""
+    smoothed, _ = road.distance_and_fraction(context.points[rows], arcs)
+    best = np.full(len(road.points), np.inf)
+    np.minimum.at(best, rows, smoothed)  # Reduce competing arcs for each observation.
+    before, _ = road.distance_and_fraction(context.points[context.previous[0, rows]], arcs)
+    after, _ = road.distance_and_fraction(context.points[context.following[0, rows]], arcs)
+    columns = [smoothed, smoothed - best[rows], before, after]
+
+    lengths = road.lengths[arcs]
+    directions = np.divide(
+        road.vectors[arcs], lengths[:, None], where=lengths[:, None] > 0,
+        out=np.zeros((len(arcs), 2)),
+    )
+    # The short window helps at junctions. Wider windows can disambiguate arc
+    # direction where adjacent readings mostly reflect GPS drift.
+    for offset, interval in zip(context.offsets, context.elapsed):
+        displacement = np.linalg.norm(offset, axis=1)
+        speed = np.divide(displacement, interval, out=np.zeros_like(interval), where=interval > 0)
+        cosine = np.divide(
+            np.einsum("ij,ij->i", directions, offset[rows]), displacement[rows],
+            out=np.zeros(len(rows)), where=displacement[rows] >= 2,
+        )
+        columns.extend((cosine, speed[rows]))
+    return tuple(columns)
