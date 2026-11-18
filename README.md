@@ -23,7 +23,7 @@ student_test: 10 trips, 40 files
 
 Keep the original archives and extracted trip data local. The student archive provides the training and development splits. The ten reserved evaluator trips are for the final demo.
 
-## Initial data inspection
+## Dataset exploration
 
 | File | Contents | How to join |
 | --- | --- | --- |
@@ -32,8 +32,29 @@ Keep the original archives and extracted trip data local. The student archive pr
 | `.arcs` | Directed from-node and to-node IDs | Zero-based row index is the arc ID |
 | `.route` | Sequence of reference arc IDs | Join by arc ID within the same trip |
 
-An initial scan of the supplied archive found 208,417 training observations and 19,160 student-test observations. The longest consecutive timestamp gaps were 153,064 seconds on training trip `00000090` and 210 seconds on student-test trip `00000065`. Across both splits, 14 consecutive reference-arc pairs lacked a direct endpoint match. The audit planned in [PLAN.md](PLAN.md) will reproduce these checks and investigate their impact on alignment and route continuity.
+Run the full audit and generate the example plot and map from the repository root:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-eda.txt
+.\.venv\Scripts\python.exe -m pathsnap.explore "$env:USERPROFILE/Downloads/Student folder.zip"
+```
+
+The command writes `outputs/eda/audit.json` with per-trip file sizes, GPS bounds, sampling intervals, road connectivity, and reference route diagnostics. `train-00000014.png` plots the road network, observations, reference arcs, and sampling intervals for the example trip. Open `train-00000014.html` in a browser to toggle the Folium layers. The interactive map loads browser assets and basemap tiles online. Use `--map-split student_test --map-trip 00000065` to plot another trip and `--output` to change the destination.
+
+### Observed results
+
+| Measure | Training | Student test |
+| --- | ---: | ---: |
+| Trips | 80 | 10 |
+| GPS observations | 208,417 | 19,160 |
+| Exactly one-second steps | 201,048 of 208,337 (96.5%) | 18,886 of 19,150 (98.6%) |
+| Longest gap | 153,064 s (`00000090`) | 210 s (`00000065`) |
+| Trips with multiple weak road components | 79 | 10 |
+| Reference arc pairs without a direct join | 13 | 1 |
+
+All 360 files passed validation for field count, numeric values, coordinate ranges, and in-range IDs where applicable. Timestamps had zero repeated or backward steps. The loader preserves the recorded order and row IDs and loads reference arc sequences separately. Weak components treat arcs as undirected for the connectivity count. The reference continuity check compares the previous arc's end node with the next arc's start node in the directed graph.
 
 ## AI assistance
 
-Codex assisted with initial archive inspection, the inventory command, and the project plan.
+Codex assisted with archive inspection, the inventory command, the project plan, and the dataset audit and visualizations.
