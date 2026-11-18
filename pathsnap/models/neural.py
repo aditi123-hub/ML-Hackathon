@@ -6,6 +6,9 @@ from sklearn.preprocessing import StandardScaler
 
 
 def shallow_mlp(seed, **parameters):
+    # Scale within each fold for the Adam optimizer. Two small ReLU layers
+    # learn feature interactions, with L2 weight decay and 512-row batches.
+    # Use a fixed epoch budget without a random per-candidate validation split.
     settings = {
         "hidden_layer_sizes": (32, 16), "alpha": 0.001, "batch_size": 512,
         "max_iter": 38, "learning_rate_init": 0.002, "early_stopping": False,
@@ -15,6 +18,8 @@ def shallow_mlp(seed, **parameters):
 
 
 def search_space(trial):
+    # Regularization and step size are searched on log scales. The epoch
+    # budget allows enough passes for smaller learning rates to recover.
     return {
         "alpha": trial.suggest_float("alpha", 0.0001, 0.05, log=True),
         "learning_rate_init": trial.suggest_float("learning_rate_init", 0.0003, 0.006, log=True),
