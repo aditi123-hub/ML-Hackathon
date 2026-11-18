@@ -8,12 +8,15 @@ import numpy as np
 
 def predict_scores(model, features, valid):
     """Map positive-class probabilities back to the observation/candidate slots."""
+    # Fit uses both boolean classes. sklearn sorts False before True, so the
+    # second column is the probability of a match for every registered model.
     scores = np.full(valid.shape, -1.0, dtype=np.float64)
     scores[valid] = model.predict_proba(features[valid])[:, 1]
     return scores
 
 
 def top_one(scores, ids):
+    """Select the highest valid score at each observation and recover its arc ID."""
     return ids[np.arange(len(ids)), np.argmax(scores, axis=1)]
 
 
@@ -30,6 +33,7 @@ def divide(numerator, denominator):
 
 
 def classification_metrics(confusion, loss):
+    """Convert candidate-pair counts to binary and unweighted macro metrics."""
     tn, fp, fn, tp = confusion
     positive_f1 = divide(2 * tp, 2 * tp + fp + fn)
     negative_f1 = divide(2 * tn, 2 * tn + fp + fn)
@@ -58,14 +62,16 @@ class Totals:
     inference_s: float = 0
 
     def add(self, model, batch):
+        """Accumulate candidate-level and observation-level counts for one trip."""
         ids = batch.candidate_ids
         valid = ids >= 0
-        started = perf_counter()
+        started = perf_counter()  # Time model scoring separately from preparation.
         scores = predict_scores(model, batch.features, valid)
         self.inference_s += perf_counter() - started
         predictions = top_one(scores, ids)
         truth = ids == batch.reference_ids[:, None]
         target = truth[valid]
+        # Clip only for log loss, where log(0) would be undefined.
         probabilities = np.clip(scores[valid], 1e-9, 1 - 1e-9)
         predicted = probabilities >= 0.5
         self.tn += int(np.count_nonzero(~target & ~predicted))
@@ -73,6 +79,8 @@ class Totals:
         self.fn += int(np.count_nonzero(target & ~predicted))
         self.tp += int(np.count_nonzero(target & predicted))
         self.loss += float(np.sum(-np.log(np.where(target, probabilities, 1 - probabilities))))
+        # A missing reference candidate never matches here. Still count the
+        # observation in the denominator so misses cannot raise accuracy.
         self.correct += int(np.count_nonzero(predictions == batch.reference_ids))
         self.observations += len(predictions)
         self.misses += int(np.count_nonzero(~truth.any(axis=1)))
