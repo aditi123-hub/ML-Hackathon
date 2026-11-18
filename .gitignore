@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.env
+.env.*
+
+/data/
+/Student folder/
+/PathSnap_student_materials/
+/outputs/
+Student folder.zip
+PathSnap_student_materials.zip
+*.track
+*.nodes
+*.arcs
+*.route
