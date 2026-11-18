@@ -1,0 +1,142 @@
+13:21:50 Loading prepared features from outputs\prepared
+13:21:53 Prepared 3 trip-grouped folds
+13:21:53 Starting logistic with Pipeline(steps=[('standardscaler', StandardScaler()),
+                ('logisticregression',
+                 LogisticRegression(max_iter=200, random_state=352))])
+13:21:53 logistic fold 1/3 fitting 202,879 candidates
+13:21:55 logistic fold 1/3 held-out top-1 87.59%, macro F1 90.43%, fit 0.94s, inference 0.48s
+13:21:55 logistic fold 2/3 fitting 200,902 candidates
+13:21:56 logistic fold 2/3 held-out top-1 90.42%, macro F1 92.04%, fit 0.77s, inference 0.21s
+13:21:56 logistic fold 3/3 fitting 207,067 candidates
+13:21:57 logistic fold 3/3 held-out top-1 57.43%, macro F1 86.17%, fit 0.85s, inference 0.31s
+13:21:57 logistic full fit fitting 305,454 candidates
+13:21:59 logistic student-test top-1 87.91%, macro F1 90.79%, fit 1.24s
+13:21:59 Starting tree with DecisionTreeClassifier(max_depth=12, min_samples_leaf=30, random_state=352)
+13:21:59 tree fold 1/3 fitting 202,879 candidates
+13:22:04 tree fold 1/3 held-out top-1 88.68%, macro F1 93.59%, fit 4.83s, inference 0.13s
+13:22:04 tree fold 2/3 fitting 200,902 candidates
+13:22:09 tree fold 2/3 held-out top-1 92.56%, macro F1 95.01%, fit 5.20s, inference 0.07s
+13:22:09 tree fold 3/3 fitting 207,067 candidates
+13:22:14 tree fold 3/3 held-out top-1 58.91%, macro F1 82.13%, fit 4.59s, inference 0.09s
+13:22:14 tree full fit fitting 305,454 candidates
+13:22:23 tree student-test top-1 89.82%, macro F1 93.88%, fit 9.06s
+13:22:23 Starting forest with RandomForestClassifier(max_depth=15, min_samples_leaf=10, n_estimators=64,
+                       n_jobs=4, random_state=352)
+13:22:23 forest fold 1/3 fitting 202,879 candidates
+13:22:39 forest fold 1/3 held-out top-1 90.03%, macro F1 94.38%, fit 14.36s, inference 1.64s
+13:22:39 forest fold 2/3 fitting 200,902 candidates
+13:22:53 forest fold 2/3 held-out top-1 92.97%, macro F1 95.65%, fit 12.78s, inference 0.99s
+13:22:53 forest fold 3/3 fitting 207,067 candidates
+13:23:07 forest fold 3/3 held-out top-1 59.16%, macro F1 88.36%, fit 13.16s, inference 1.23s
+13:23:07 forest full fit fitting 305,454 candidates
+13:23:33 forest student-test top-1 90.86%, macro F1 94.67%, fit 24.97s
+13:23:33 Starting boosting with HistGradientBoostingClassifier(early_stopping=False, l2_regularization=0.3,
+                               learning_rate=0.12, max_iter=140,
+                               min_samples_leaf=25, random_state=352)
+13:23:33 boosting fold 1/3 fitting 202,879 candidates
+13:23:40 boosting fold 1/3 held-out top-1 89.74%, macro F1 94.45%, fit 3.68s, inference 3.65s
+13:23:40 boosting fold 2/3 fitting 200,902 candidates
+13:23:44 boosting fold 2/3 held-out top-1 93.40%, macro F1 96.00%, fit 1.66s, inference 1.90s
+13:23:44 boosting fold 3/3 fitting 207,067 candidates
+13:23:48 boosting fold 3/3 held-out top-1 59.65%, macro F1 88.84%, fit 1.54s, inference 2.47s
+13:23:48 boosting full fit fitting 305,454 candidates
+13:23:52 boosting student-test top-1 91.63%, macro F1 94.96%, fit 2.25s
+13:23:52 Starting mlp with Pipeline(steps=[('standardscaler', StandardScaler()),
+                ('mlpclassifier',
+                 MLPClassifier(alpha=0.001, batch_size=512,
+                               hidden_layer_sizes=(32, 16),
+                               learning_rate_init=0.002, max_iter=38,
+                               random_state=352))])
+13:23:52 mlp fold 1/3 fitting 202,879 candidates
+13:24:00 mlp fold 1/3 held-out top-1 89.17%, macro F1 93.57%, fit 7.71s, inference 0.42s
+13:24:00 mlp fold 2/3 fitting 200,902 candidates
+13:24:08 mlp fold 2/3 held-out top-1 92.20%, macro F1 95.09%, fit 7.55s, inference 0.23s
+13:24:08 mlp fold 3/3 fitting 207,067 candidates
+13:24:16 mlp fold 3/3 held-out top-1 58.94%, macro F1 87.70%, fit 7.72s, inference 0.33s
+13:24:16 mlp full fit fitting 305,454 candidates
+13:24:28 mlp student-test top-1 90.65%, macro F1 94.09%, fit 11.91s
+13:24:28 Selected boosting by grouped CV top-1 80.93%
+13:24:28 A new study created in memory with name: no-name-91c30437-0329-4545-a50d-9b180f7cb513
+13:24:28 boosting trial 1/10 parameters {'max_iter': 200, 'max_leaf_nodes': 42, 'learning_rate': 0.05808236468443547, 'min_samples_leaf': 17, 'l2_regularization': 2.437818377240431}
+13:24:28 boosting trial 1/10 fold 1/3 fitting 202,879 candidates
+13:24:36 boosting trial 1/10 fold 1/3 held-out top-1 89.94%, macro F1 94.51%, fit 2.64s, inference 5.46s
+13:24:36 boosting trial 1/10 fold 2/3 fitting 200,902 candidates
+13:24:42 boosting trial 1/10 fold 2/3 held-out top-1 93.49%, macro F1 96.09%, fit 2.56s, inference 2.77s
+13:24:42 boosting trial 1/10 fold 3/3 fitting 207,067 candidates
+13:24:48 boosting trial 1/10 fold 3/3 held-out top-1 59.54%, macro F1 89.01%, fit 2.72s, inference 4.06s
+13:24:48 Trial 0 finished with value: 0.809900110037665 and parameters: {'max_iter': 200, 'max_leaf_nodes': 42, 'learning_rate': 0.05808236468443547, 'min_samples_leaf': 17, 'l2_regularization': 2.437818377240431}. Best is trial 0 with value: 0.809900110037665.
+13:24:48 boosting trial 2/10 parameters {'max_iter': 100, 'max_leaf_nodes': 20, 'learning_rate': 0.11263495498115658, 'min_samples_leaf': 14, 'l2_regularization': 0.12427594164226406}
+13:24:48 boosting trial 2/10 fold 1/3 fitting 202,879 candidates
+13:24:52 boosting trial 2/10 fold 1/3 held-out top-1 89.72%, macro F1 94.39%, fit 1.07s, inference 2.26s
+13:24:52 boosting trial 2/10 fold 2/3 fitting 200,902 candidates
+13:24:54 boosting trial 2/10 fold 2/3 held-out top-1 93.06%, macro F1 95.86%, fit 1.03s, inference 1.18s
+13:24:54 boosting trial 2/10 fold 3/3 fitting 207,067 candidates
+13:24:57 boosting trial 2/10 fold 3/3 held-out top-1 59.43%, macro F1 88.84%, fit 1.00s, inference 1.77s
+13:24:57 Trial 1 finished with value: 0.8073908890171851 and parameters: {'max_iter': 100, 'max_leaf_nodes': 20, 'learning_rate': 0.11263495498115658, 'min_samples_leaf': 14, 'l2_regularization': 0.12427594164226406}. Best is trial 0 with value: 0.809900110037665.
+13:24:57 boosting trial 3/10 parameters {'max_iter': 180, 'max_leaf_nodes': 41, 'learning_rate': 0.04126159850268439, 'min_samples_leaf': 32, 'l2_regularization': 0.13534871470678328}
+13:24:57 boosting trial 3/10 fold 1/3 fitting 202,879 candidates
+13:25:04 boosting trial 3/10 fold 1/3 held-out top-1 89.89%, macro F1 94.51%, fit 2.33s, inference 4.60s
+13:25:04 boosting trial 3/10 fold 2/3 fitting 200,902 candidates
+13:25:09 boosting trial 3/10 fold 2/3 held-out top-1 93.28%, macro F1 96.02%, fit 2.55s, inference 2.72s
+13:25:09 boosting trial 3/10 fold 3/3 fitting 207,067 candidates
+13:25:16 boosting trial 3/10 fold 3/3 held-out top-1 59.50%, macro F1 89.24%, fit 2.64s, inference 4.07s
+13:25:16 Trial 2 finished with value: 0.8089423271284691 and parameters: {'max_iter': 180, 'max_leaf_nodes': 41, 'learning_rate': 0.04126159850268439, 'min_samples_leaf': 32, 'l2_regularization': 0.13534871470678328}. Best is trial 0 with value: 0.809900110037665.
+13:25:16 boosting trial 4/10 parameters {'max_iter': 220, 'max_leaf_nodes': 63, 'learning_rate': 0.052524857919252536, 'min_samples_leaf': 70, 'l2_regularization': 4.655602108415354}
+13:25:16 boosting trial 4/10 fold 1/3 fitting 202,879 candidates
+13:25:27 boosting trial 4/10 fold 1/3 held-out top-1 90.07%, macro F1 94.54%, fit 3.73s, inference 7.90s
+13:25:27 boosting trial 4/10 fold 2/3 fitting 200,902 candidates
+13:25:36 boosting trial 4/10 fold 2/3 held-out top-1 93.57%, macro F1 96.08%, fit 3.98s, inference 4.31s
+13:25:36 boosting trial 4/10 fold 3/3 fitting 207,067 candidates
+13:25:45 boosting trial 4/10 fold 3/3 held-out top-1 59.69%, macro F1 89.45%, fit 3.74s, inference 4.99s
+13:25:45 Trial 3 finished with value: 0.8110917967828503 and parameters: {'max_iter': 220, 'max_leaf_nodes': 63, 'learning_rate': 0.052524857919252536, 'min_samples_leaf': 70, 'l2_regularization': 4.655602108415354}. Best is trial 3 with value: 0.8110917967828503.
+13:25:45 boosting trial 5/10 parameters {'max_iter': 220, 'max_leaf_nodes': 63, 'learning_rate': 0.19039180565092598, 'min_samples_leaf': 69, 'l2_regularization': 3.519956411995243}
+13:25:45 boosting trial 5/10 fold 1/3 fitting 202,879 candidates
+13:25:54 boosting trial 5/10 fold 1/3 held-out top-1 89.97%, macro F1 94.41%, fit 2.94s, inference 6.75s
+13:25:54 boosting trial 5/10 fold 2/3 fitting 200,902 candidates
+13:26:01 boosting trial 5/10 fold 2/3 held-out top-1 93.80%, macro F1 96.09%, fit 3.09s, inference 3.53s
+13:26:01 boosting trial 5/10 fold 3/3 fitting 207,067 candidates
+13:26:09 boosting trial 5/10 fold 3/3 held-out top-1 59.70%, macro F1 89.33%, fit 3.12s, inference 5.01s
+13:26:09 Trial 4 finished with value: 0.811551046132667 and parameters: {'max_iter': 220, 'max_leaf_nodes': 63, 'learning_rate': 0.19039180565092598, 'min_samples_leaf': 69, 'l2_regularization': 3.519956411995243}. Best is trial 4 with value: 0.811551046132667.
+13:26:09 boosting trial 6/10 parameters {'max_iter': 120, 'max_leaf_nodes': 61, 'learning_rate': 0.1788925073514693, 'min_samples_leaf': 70, 'l2_regularization': 0.018756322263745753}
+13:26:09 boosting trial 6/10 fold 1/3 fitting 202,879 candidates
+13:26:14 boosting trial 6/10 fold 1/3 held-out top-1 89.72%, macro F1 94.28%, fit 1.71s, inference 3.43s
+13:26:14 boosting trial 6/10 fold 2/3 fitting 200,902 candidates
+13:26:18 boosting trial 6/10 fold 2/3 held-out top-1 93.64%, macro F1 96.01%, fit 1.58s, inference 1.84s
+13:26:18 boosting trial 6/10 fold 3/3 fitting 207,067 candidates
+13:26:22 boosting trial 6/10 fold 3/3 held-out top-1 59.75%, macro F1 88.45%, fit 1.70s, inference 2.69s
+13:26:22 Trial 5 finished with value: 0.8103579262001802 and parameters: {'max_iter': 120, 'max_leaf_nodes': 61, 'learning_rate': 0.1788925073514693, 'min_samples_leaf': 70, 'l2_regularization': 0.018756322263745753}. Best is trial 4 with value: 0.811551046132667.
+13:26:22 boosting trial 7/10 parameters {'max_iter': 160, 'max_leaf_nodes': 51, 'learning_rate': 0.19798932335517208, 'min_samples_leaf': 50, 'l2_regularization': 0.8636205351227152}
+13:26:22 boosting trial 7/10 fold 1/3 fitting 202,879 candidates
+13:26:29 boosting trial 7/10 fold 1/3 held-out top-1 89.94%, macro F1 94.31%, fit 2.10s, inference 4.78s
+13:26:29 boosting trial 7/10 fold 2/3 fitting 200,902 candidates
+13:26:34 boosting trial 7/10 fold 2/3 held-out top-1 93.66%, macro F1 95.99%, fit 2.15s, inference 2.60s
+13:26:34 boosting trial 7/10 fold 3/3 fitting 207,067 candidates
+13:26:40 boosting trial 7/10 fold 3/3 held-out top-1 59.50%, macro F1 89.15%, fit 2.19s, inference 3.72s
+13:26:40 Trial 6 finished with value: 0.8103426894977277 and parameters: {'max_iter': 160, 'max_leaf_nodes': 51, 'learning_rate': 0.19798932335517208, 'min_samples_leaf': 50, 'l2_regularization': 0.8636205351227152}. Best is trial 4 with value: 0.811551046132667.
+13:26:40 boosting trial 8/10 parameters {'max_iter': 140, 'max_leaf_nodes': 20, 'learning_rate': 0.10837006197298973, 'min_samples_leaf': 51, 'l2_regularization': 0.6596938951286876}
+13:26:40 boosting trial 8/10 fold 1/3 fitting 202,879 candidates
+13:26:44 boosting trial 8/10 fold 1/3 held-out top-1 89.89%, macro F1 94.46%, fit 1.51s, inference 3.06s
+13:26:44 boosting trial 8/10 fold 2/3 fitting 200,902 candidates
+13:26:48 boosting trial 8/10 fold 2/3 held-out top-1 93.10%, macro F1 95.87%, fit 1.54s, inference 1.89s
+13:26:48 boosting trial 8/10 fold 3/3 fitting 207,067 candidates
+13:26:52 boosting trial 8/10 fold 3/3 held-out top-1 59.50%, macro F1 88.95%, fit 1.66s, inference 2.61s
+13:26:52 Trial 7 finished with value: 0.8083119918116052 and parameters: {'max_iter': 140, 'max_leaf_nodes': 20, 'learning_rate': 0.10837006197298973, 'min_samples_leaf': 51, 'l2_regularization': 0.6596938951286876}. Best is trial 4 with value: 0.811551046132667.
+13:26:52 boosting trial 9/10 parameters {'max_iter': 220, 'max_leaf_nodes': 31, 'learning_rate': 0.14874718168931214, 'min_samples_leaf': 55, 'l2_regularization': 0.011081869094847754}
+13:26:52 boosting trial 9/10 fold 1/3 fitting 202,879 candidates
+13:27:00 boosting trial 9/10 fold 1/3 held-out top-1 89.87%, macro F1 94.39%, fit 2.53s, inference 5.26s
+13:27:00 boosting trial 9/10 fold 2/3 fitting 200,902 candidates
+13:27:05 boosting trial 9/10 fold 2/3 held-out top-1 93.57%, macro F1 96.05%, fit 2.42s, inference 2.93s
+13:27:05 boosting trial 9/10 fold 3/3 fitting 207,067 candidates
+13:27:12 boosting trial 9/10 fold 3/3 held-out top-1 59.57%, macro F1 88.84%, fit 2.46s, inference 4.05s
+13:27:12 Trial 8 finished with value: 0.8100275664415154 and parameters: {'max_iter': 220, 'max_leaf_nodes': 31, 'learning_rate': 0.14874718168931214, 'min_samples_leaf': 55, 'l2_regularization': 0.011081869094847754}. Best is trial 4 with value: 0.811551046132667.
+13:27:12 boosting trial 10/10 parameters {'max_iter': 80, 'max_leaf_nodes': 52, 'learning_rate': 0.07975031485486676, 'min_samples_leaf': 27, 'l2_regularization': 0.5617184881592635}
+13:27:12 boosting trial 10/10 fold 1/3 fitting 202,879 candidates
+13:27:16 boosting trial 10/10 fold 1/3 held-out top-1 90.02%, macro F1 94.51%, fit 1.38s, inference 2.44s
+13:27:16 boosting trial 10/10 fold 2/3 fitting 200,902 candidates
+13:27:19 boosting trial 10/10 fold 2/3 held-out top-1 93.31%, macro F1 95.98%, fit 1.24s, inference 1.57s
+13:27:19 boosting trial 10/10 fold 3/3 fitting 207,067 candidates
+13:27:22 boosting trial 10/10 fold 3/3 held-out top-1 59.63%, macro F1 87.99%, fit 1.47s, inference 1.87s
+13:27:22 Trial 9 finished with value: 0.8098587322582014 and parameters: {'max_iter': 80, 'max_leaf_nodes': 52, 'learning_rate': 0.07975031485486676, 'min_samples_leaf': 27, 'l2_regularization': 0.5617184881592635}. Best is trial 4 with value: 0.811551046132667.
+13:27:22 boosting tuned full fit fitting 305,454 candidates
+13:27:30 boosting tuned student-test top-1 91.36%, macro F1 94.77%, fit 4.99s
+13:27:30 Exported and verified boosting (tuned) at artifacts\current
