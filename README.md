@@ -6,6 +6,83 @@ Aditya Shrivastav, Akhila T, Ananya B R, and Aditi Agarwal
 
 PathSnap is a hackathon project to match noisy GPS observations to a directed road network and reconstruct vehicle routes. See [the implementation and commit plan](PLAN.md) for the path from dataset exploration to the two-laptop demo.
 
+Start with the [code guide](docs/CODE_GUIDE.md) to find any implementation and rehearse the coordinates-to-metres example. The [guidelines audit](docs/GUIDELINES_AUDIT.md) shows the evidence for each requirement. The [final commit plan](docs/FINAL_COMMIT_PLAN.md) assigns two commits and two reviews to each teammate.
+
+## Current results
+
+The tuned histogram boosting model and route decoder matched **18,855 of 19,160 observations (98.41%)** against the aligned references across all ten student-test trips. Each observation counts once, including ten candidate misses. The supplied references list arcs in order and carry no per-observation timestamps, so the pointwise metric uses monotone reference alignment.
+
+| Stage | Correct | Observation top-1 | Mean trip sequence F1 |
+| --- | ---: | ---: | ---: |
+| Tuned classifier | 17,504 | 91.36% | 83.47% |
+| Classifier + Viterbi | 18,015 | 94.02% | 98.37% |
+| Final route with refined observation assignments | 18,855 | 98.41% | 98.37% |
+
+The last pass assigns each GPS observation to a candidate on its **predicted** route block using distance, heading and traversal order. Across the ten trips, final accuracy ranged from 94.57% to 100.00%. Trips `00000009` and `00000091` fell below 96%. The student-test results measure development performance. The separately released evaluator partition is for the final demo.
+
+[Five-model comparison](results/current/model_comparison.csv) · [Per-trip route scores](results/current/route_comparison.csv) · [Per-trip accuracy plot](results/current/route_comparison.png) · [Training log](results/current/training.log) · [Folium route map](results/current/route-00000065.html)
+
+## Clean data and training
+
+Use Python 3.11–3.13 from the repository root. The commands below use the original student ZIP.
+
+```powershell
+python -m venv .venv
+$python = '.\.venv\Scripts\python.exe'
+& $python -m pip install -r requirements.txt
+$studentZip = Join-Path $env:USERPROFILE 'Downloads/Student folder.zip'
+& $python -m pathsnap.preparation $studentZip
+& $python -m pathsnap.training --threads 5 --trials 10
+& $python -m pathsnap.mlp_diagnostic
+& $python -m pathsnap.route_eval $studentZip --calibrate
+& $python -m pathsnap.experiment_plots
+```
+
+Preparation prints the CSV directory under `outputs/prepared/bundles/<bundle>/clean/`. Within each split, read `trip_id` as text to retain leading zeroes and join keys within a trip. All record IDs start at zero.
+
+| CSV | Key and contents |
+| --- | --- |
+| `observations.csv` | Trip and observation ID, longitude, latitude, timestamp and elapsed gap |
+| `nodes.csv` | Trip and node ID, longitude and latitude |
+| `arcs.csv` | Trip and directed arc ID, source and target node IDs |
+| `reference_route.csv` | Trip and route position, reference arc ID |
+| `aligned_labels.csv` | Trip and observation ID, aligned route position and arc ID, residual distance, candidate availability and fit eligibility |
+| `trip_quality.csv` | Split and trip, row counts, long gaps, missed candidates and labels excluded from fitting |
+
+The loader checks numeric fields, coordinate ranges and graph references. Preparation checks increasing timestamps and preserves gaps and row IDs. The fitting sample skips observations with an aligned arc farther than 60 m away or absent from the candidate set. Validation and student-test scoring keep those observations. The same preparation pass writes the compact NPZ candidate cache used for training.
+
+Training prints each fold and the Bayesian trial settings and metrics to the terminal and writes the same output to `results/current/training.log`. `experiments.json` includes fold membership, confusion matrices, timings and parameters. The five model factories live under [pathsnap/models](pathsnap/models). [fitting.py](pathsnap/fitting.py) applies the shared trip-grouped protocol. [inference.py](pathsnap/inference.py) loads the exported classifier, its feature schema and the adjacent decoder settings. Feature scaling for logistic regression and MLP is fitted inside each fold. The decoder settings were selected on a seeded 12-trip training sample.
+
+To inspect one trip and see all stages in the terminal:
+
+```powershell
+& $python -m pathsnap.inference $studentZip --trip 00000065 --observation 21 --decode --score
+```
+
+## Two-laptop evaluator demo
+
+On laptop 1, install `requirements.txt` and start FastAPI. For a rehearsal, use the student ZIP. The API logs each request, timing and final score in this terminal.
+
+```powershell
+& $python -m pathsnap.api --student-zip $studentZip --host 0.0.0.0 --port 8000
+```
+
+For the final run, use the released evaluator archive on laptop 1 only. The extracted `evaluator_test` directory contains ten immediate trip folders with `.track`, `.nodes`, `.arcs` and `.route` files. The commands below extract to Git-ignored storage. Skip extraction if the folder is already present.
+
+```powershell
+$evaluatorZip = Join-Path $env:USERPROFILE 'Downloads/evaluator_test.zip'
+Expand-Archive -LiteralPath $evaluatorZip -DestinationPath 'outputs/final-evaluation'
+& $python -m pathsnap.api --evaluator-dir 'outputs/final-evaluation/evaluator_test' --host 0.0.0.0 --port 8000
+```
+
+On laptop 2, run the UI from the repository using laptop 1's LAN IP and open [the local evaluator UI](http://127.0.0.1:8001). For a single-computer rehearsal, use `http://127.0.0.1:8000` as the API origin. Allow port 8000 on laptop 1's private-network firewall if required by your network setup.
+
+```powershell
+python -m pathsnap.ui --api http://192.168.1.10:8000 --port 8001
+```
+
+Select a trip and click **Evaluate trip**. The UI shows the predicted route, GPS fixes, nearby roads and aggregate scores. Its map works with geometry returned by the API and requires no external map tiles. The API opens the reference file after prediction and sends only the aggregate scores. The HTTP contract exposes readiness at `GET /healthz`, available trips at `GET /api/trips` and evaluation at `POST /api/trips/{trip_id}/predict`.
+
 ## First evaluation
 
 The [viva guide](EVALUATION_1.md) covers preprocessing, features, training, and model selection. The [commit handoff](COMMIT_PLAN.md) assigns files and verification to each teammate. This checkpoint runs the per-observation classifier on the supplied student data.
@@ -16,20 +93,12 @@ From the repository root on Windows, use Python 3.11–3.13. The packaged model 
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 $studentZip = Join-Path $env:USERPROFILE 'Downloads/Student folder.zip'
-.\.venv\Scripts\python.exe -m pathsnap.inference $studentZip --trip 00000065 --observation 21 --score
+.\.venv\Scripts\python.exe -m pathsnap.inference $studentZip --artifact artifacts/classifier.joblib --trip 00000065 --observation 21 --score
 ```
 
 The demo prints the three highest-scoring candidates for GPS observation 21. `--score` aligns the local reference after prediction and reports correct and total GPS observations. Omit it to show the independent prediction path. Load the included joblib artifact or one from a trusted training run.
 
-Reproduce the cached features, five grouped comparisons, and ten Bayesian trials:
-
-```powershell
-.\.venv\Scripts\python.exe -m pathsnap.preparation $studentZip --radius 150 --limit 20
-.\.venv\Scripts\python.exe -m pathsnap.training --trials 10
-.\.venv\Scripts\python.exe -m pathsnap.experiment_plots
-```
-
-The cache goes under `outputs/prepared/`. Training writes `results/experiments.json` with fold, fit, and trial details, `results/model_comparison.csv` with the comparison summary, and `artifacts/classifier.joblib` with the selected fitted model and its feature configuration. `results/preparation_manifest.json` records per-trip coverage and the supplied archive hash for the bundled experiment. Copy it from `outputs/prepared/manifest.json` after a rerun. For a single baseline, use `--model tree` or another model name with separate `--results` and `--artifacts` directories.
+The original checkpoint artifacts and metrics are in `artifacts/classifier.joblib` and `results/`. The updated preparation, training and scoring commands are under [Clean data and training](#clean-data-and-training). To run one baseline, use `--model tree` or another model name with separate `--results` and `--artifacts` directories.
 
 ## Check the student dataset
 
