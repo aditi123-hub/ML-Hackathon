@@ -1,0 +1,26 @@
+INFO:     Started server process [21756]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8104 (Press CTRL+C to quit)
+INFO:     127.0.0.1:62881 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62882 - "GET /api/trips HTTP/1.1" 200 OK
+INFO:     Evaluated student_test/00000000 in 2.58s, 2480/2503 decoded observations (99.08%)
+INFO:     127.0.0.1:62883 - "POST /api/trips/00000000/predict HTTP/1.1" 200 OK
+INFO:     Evaluated student_test/00000007 in 0.26s, 1354/1354 decoded observations (100.00%)
+INFO:     127.0.0.1:62884 - "POST /api/trips/00000007/predict HTTP/1.1" 200 OK
+INFO:     Evaluated student_test/00000009 in 0.47s, 992/1049 decoded observations (94.57%)
+INFO:     127.0.0.1:62885 - "POST /api/trips/00000009/predict HTTP/1.1" 200 OK
+INFO:     Evaluated student_test/00000040 in 0.74s, 2995/2995 decoded observations (100.00%)
+INFO:     127.0.0.1:62886 - "POST /api/trips/00000040/predict HTTP/1.1" 200 OK
+INFO:     Evaluated student_test/00000052 in 0.09s, 262/262 decoded observations (100.00%)
+INFO:     127.0.0.1:52330 - "POST /api/trips/00000052/predict HTTP/1.1" 200 OK
+INFO:     Evaluated student_test/00000056 in 1.71s, 3871/3958 decoded observations (97.80%)
+INFO:     127.0.0.1:52331 - "POST /api/trips/00000056/predict HTTP/1.1" 200 OK
+INFO:     Evaluated student_test/00000065 in 0.32s, 750/768 decoded observations (97.66%)
+INFO:     127.0.0.1:56698 - "POST /api/trips/00000065/predict HTTP/1.1" 200 OK
+INFO:     Evaluated student_test/00000076 in 0.81s, 1473/1486 decoded observations (99.13%)
+INFO:     127.0.0.1:56699 - "POST /api/trips/00000076/predict HTTP/1.1" 200 OK
+INFO:     Evaluated student_test/00000077 in 1.50s, 3843/3911 decoded observations (98.26%)
+INFO:     127.0.0.1:56700 - "POST /api/trips/00000077/predict HTTP/1.1" 200 OK
+INFO:     Evaluated student_test/00000091 in 0.37s, 835/874 decoded observations (95.54%)
+INFO:     127.0.0.1:56701 - "POST /api/trips/00000091/predict HTTP/1.1" 200 OK
