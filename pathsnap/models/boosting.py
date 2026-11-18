@@ -4,6 +4,9 @@ from sklearn.ensemble import HistGradientBoostingClassifier
 
 
 def histogram_boosting(seed, **parameters):
+    # Histogram bins keep repeated split searches practical at this sample size.
+    # The learning rate, leaf budget, leaf support and L2 term constrain the
+    # additive corrections to binary log loss.
     settings = {
         "max_iter": 140, "max_leaf_nodes": 31, "learning_rate": 0.12,
         "min_samples_leaf": 25, "l2_regularization": 0.3,
@@ -14,6 +17,8 @@ def histogram_boosting(seed, **parameters):
 
 
 def search_space(trial):
+    # Tune iteration count jointly with learning rate. Leaf limits, support,
+    # and L2 control interactions and shrink noisy candidate scores.
     return {
         "max_iter": trial.suggest_int("max_iter", 80, 220, step=20),
         "max_leaf_nodes": trial.suggest_int("max_leaf_nodes", 15, 63),
